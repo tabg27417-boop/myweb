@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Titan IT Solution — POS Systems for Modern Businesses</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#FF6A39;
+    --orange-dark:#E2521F;
+    --pink:#FF3D71;
+    --cream:#FFF7F1;
+    --ink:#241B19;
+    --ink-soft:#7A6D69;
+    --white:#FFFFFF;
+    --line:#FFE2D2;
+    --shadow: 0 20px 50px -20px rgba(226,82,31,.35);
+    --radius: 18px;
+    --max: 1180px;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    font-family:'Inter', sans-serif;
+    color:var(--ink);
+    background:var(--white);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  h1,h2,h3,h4{
+    font-family:'Sora', sans-serif;
+    font-weight:700;
+    letter-spacing:-0.02em;
+    line-height:1.15;
+  }
+
+  a{color:inherit; text-decoration:none;}
+  img{max-width:100%; display:block;}
+
+  .wrap{
+    max-width:var(--max);
+    margin:0 auto;
+    padding:0 32px;
+  }
+
+  /* ===== Buttons ===== */
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:14px 28px;
+    border-radius:999px;
+    font-weight:600;
+    font-size:.95rem;
+    cursor:pointer;
+    border:none;
+    transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
+    font-family:'Inter', sans-serif;
+  }
+  .btn-primary{
+    background: linear-gradient(135deg, var(--orange), var(--pink));
+    color:var(--white);
+    box-shadow: var(--shadow);
+  }
+  .btn-primary:hover{ transform: translateY(-2px); box-shadow: 0 24px 50px -18px rgba(255,61,113,.45); }
+  .btn-ghost{
+    background: transparent;
+    color: var(--ink);
+    border: 1.5px solid var(--line);
+  }
+  .btn-ghost:hover{ border-color: var(--orange); color: var(--orange-dark); }
+  .btn:focus-visible{ outline: 3px solid var(--orange); outline-offset: 2px; }
+
+  /* ===== Header ===== */
+  header{
+    position: sticky;
+    top:0;
+    z-index:100;
+    background: rgba(255,255,255,.82);
+    backdrop-filter: blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 32px;
+    max-width:var(--max);
+    margin:0 auto;
+  }
+  .logo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'Sora', sans-serif;
+    font-weight:800;
+    font-size:1.3rem;
+  }
+  .logo .mark{
+    width:34px; height:34px;
+    border-radius:9px;
+    background: linear-gradient(135deg, var(--orange), var(--pink));
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:1rem; font-weight:800;
+    box-shadow: var(--shadow);
+  }
+  .logo small{
+    display:block;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:.62rem;
+    letter-spacing:.18em;
+    color:var(--ink-soft);
+    margin-top:1px;
+  }
+  .nav-links{
+    display:flex;
+    align-items:center;
+    gap:34px;
+    font-weight:600;
+    font-size:.95rem;
+  }
+  .nav-links a{ color:var(--ink-soft); transition:color .2s; position:relative; }
+  .nav-links a:hover{ color:var(--orange-dark); }
+  .nav-actions{ display:flex; align-items:center; gap:14px; }
+  .burger{
+    display:none;
+    flex-direction:column;
+    gap:5px;
+    background:none; border:none; cursor:pointer; padding:6px;
+  }
+  .burger span{ width:24px; height:2.5px; background:var(--ink); border-radius:2px; transition: all .3s; }
+
+  /* ===== Hero ===== */
+  .hero{
+    padding:72px 0 60px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:'';
+    position:absolute;
+    top:-180px; right:-180px;
+    width:480px; height:480px;
+    background: radial-gradient(circle, rgba(255,106,57,.18), transparent 70%);
+    border-radius:50%;
+    z-index:0;
+  }
+  .hero-grid{
+    display:grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap:60px;
+    align-items:center;
+    position:relative;
+    z-index:1;
+  }
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background: var(--cream);
+    border:1px solid var(--line);
+    color:var(--orange-dark);
+    font-weight:600;
+    font-size:.8rem;
+    letter-spacing:.06em;
+    padding:7px 16px;
+    border-radius:999px;
+    margin-bottom:22px;
+    text-transform:uppercase;
+  }
+  .eyebrow .dot{
+    width:7px;height:7px;border-radius:50%;
+    background: var(--orange);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ box-shadow:0 0 0 0 rgba(255,106,57,.55);}
+    50%{ box-shadow:0 0 0 6px rgba(255,106,57,0);}
+  }
+  .hero h1{
+    font-size: clamp(2.4rem, 4.4vw, 3.6rem);
+    margin-bottom:20px;
+  }
+  .hero h1 span{
+    background: linear-gradient(135deg, var(--orange), var(--pink));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .hero p.lead{
+    font-size:1.08rem;
+    color:var(--ink-soft);
+    max-width:480px;
+    margin-bottom:32px;
+  }
+  .hero-ctas{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:46px;}
+
+  .hero-meta{
+    display:flex; gap:38px; flex-wrap:wrap;
+  }
+  .hero-meta div b{
+    display:block; font-family:'Sora',sans-serif; font-size:1.5rem; font-weight:800;
+  }
+  .hero-meta div span{
+    font-size:.82rem; color:var(--ink-soft);
+  }
+
+  /* ===== Receipt signature element ===== */
+  .receipt-stage{
+    display:flex; justify-content:center; position:relative;
+  }
+  .receipt-stage::before{
+    content:'';
+    position:absolute;
+    width:340px; height:340px;
+    background: linear-gradient(160deg, rgba(255,61,113,.16), rgba(255,106,57,.16));
+    border-radius:40% 60% 55% 45% / 50% 45% 55% 50%;
+    filter: blur(2px);
+    z-index:0;
+    top:10%;
+  }
+  .receipt{
+    position:relative;
+    z-index:1;
+    width:280px;
+    background: var(--white);
+    border-radius: 6px 6px 0 0;
+    box-shadow: 0 30px 60px -25px rgba(36,27,25,.35);
+    padding:26px 22px 28px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:.78rem;
+    color:var(--ink);
+    transform: rotate(-3deg);
+  }
+  .receipt::after{
+    content:'';
+    position:absolute;
+    bottom:-13px; left:0; right:0; height:13px;
+    background:
+      linear-gradient(135deg, var(--white) 50%, transparent 50%),
+      linear-gradient(45deg, var(--white) 50%, transparent 50%);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 0;
+    background-repeat: repeat-x;
+  }
+  .receipt-head{
+    text-align:center;
+    border-bottom:1.5px dashed var(--line);
+    padding-bottom:12px;
+    margin-bottom:12px;
+  }
+  .receipt-head .rmark{
+    width:30px;height:30px;border-radius:8px;
+    margin:0 auto 8px;
+    background: linear-gradient(135deg, var(--orange), var(--pink));
+  }
+  .receipt-head b{ font-family:'Sora',sans-serif; font-size:.95rem; letter-spacing:.08em; }
+  .receipt-head small{ display:block; color:var(--ink-soft); margin-top:4px; font-size:.7rem; }
+  .receipt-line{
+    display:flex; justify-content:space-between;
+    padding:5px 0;
+    opacity:0;
+    animation: line-in .5s ease forwards;
+  }
+  .receipt-line span:first-child{ color:var(--ink-soft); }
+  @keyframes line-in{
+    from{ opacity:0; transform: translateY(-6px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  .receipt-total{
+    border-top:1.5px dashed var(--line);
+    margin-top:10px;
+    padding-top:10px;
+    display:flex; justify-content:space-between;
+    font-weight:700;
+    font-size:.92rem;
+  }
+  .receipt-total span:last-child{ color:var(--orange-dark); }
+  .receipt-foot{
+    text-align:center;
+    margin-top:14px;
+    color:var(--ink-soft);
+    font-size:.68rem;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+  }
+  .receipt-foot .blink{
+    display:inline-block;
+    width:6px;height:11px;
+    background:var(--orange);
+    margin-left:4px;
+    vertical-align:middle;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  /* ===== Trust bar ===== */
+  .trustbar{
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    background:var(--cream);
+  }
+  .trustbar .wrap{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:24px;
+    padding:26px 32px;
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    color:var(--ink-soft);
+    letter-spacing:.04em;
+    font-size:.95rem;
+  }
+  .trustbar span{ opacity:.75; transition:opacity .2s, color .2s; }
+  .trustbar span:hover{ opacity:1; color:var(--orange-dark); }
+
+  /* ===== Section heading ===== */
+  .section{ padding:96px 0; }
+  .section-head{
+    max-width:620px;
+    margin-bottom:56px;
+  }
+  .section-head .eyebrow{ margin-bottom:16px; }
+  .section-head h2{ font-size: clamp(1.9rem, 3.2vw, 2.6rem); margin-bottom:14px; }
+  .section-head p{ color:var(--ink-soft); font-size:1.02rem; }
+
+  .alt{ background: var(--cream); }
+
+  /* ===== Features grid ===== */
+  .feature-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:28px;
+  }
+  .feature-card{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:32px 26px;
+    transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+  }
+  .feature-card:hover{
+    transform: translateY(-6px);
+    box-shadow: var(--shadow);
+    border-color: transparent;
+  }
+  .feature-icon{
+    width:48px; height:48px;
+    border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(135deg, rgba(255,106,57,.12), rgba(255,61,113,.12));
+    color:var(--orange-dark);
+    margin-bottom:20px;
+    font-size:1.3rem;
+  }
+  .feature-card h3{ font-size:1.08rem; margin-bottom:8px; }
+  .feature-card p{ color:var(--ink-soft); font-size:.92rem; }
+
+  /* ===== Showcase (device mockup) ===== */
+  .showcase{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:60px;
+    align-items:center;
+  }
+  .device{
+    background: linear-gradient(160deg, var(--ink), #3a2c29);
+    border-radius:24px;
+    padding:18px;
+    box-shadow: 0 40px 80px -30px rgba(36,27,25,.5);
+  }
+  .device-screen{
+    background: var(--white);
+    border-radius:14px;
+    padding:22px;
+    font-family:'Sora',sans-serif;
+  }
+  .device-screen .ds-top{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:18px;
+  }
+  .device-screen .ds-top b{ font-size:1rem; }
+  .ds-pill{
+    background: linear-gradient(135deg, var(--orange), var(--pink));
+    color:#fff; font-size:.7rem; font-weight:700;
+    padding:5px 12px; border-radius:999px;
+  }
+  .ds-stats{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  .ds-stat{
+    background:var(--cream); border-radius:12px; padding:14px;
+  }
+  .ds-stat span{ display:block; font-size:.7rem; color:var(--ink-soft); margin-bottom:6px; font-family:'Inter',sans-serif; }
+  .ds-stat b{ font-size:1.25rem; }
+  .ds-bars{ display:flex; align-items:flex-end; gap:8px; height:90px; }
+  .ds-bars div{
+    flex:1;
+    border-radius:6px 6px 0 0;
+    background: linear-gradient(180deg, var(--orange), var(--pink));
+    opacity:.85;
+  }
+  .showcase-text .check-list{ margin-top:26px; display:flex; flex-direction:column; gap:14px; }
+  .check-list li{ display:flex; gap:12px; align-items:flex-start; font-size:.96rem; color:var(--ink-soft); list-style:none; }
+  .check-list li::before{
+    content:'';
+    flex-shrink:0;
+    width:20px; height:20px; margin-top:2px;
+    border-radius:50%;
+    background: linear-gradient(135deg, var(--orange), var(--pink));
+    display:inline-block;
+  }
+
+  /* ===== How it works ===== */
+  .steps{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:30px;
+  }
+  .step{ position:relative; padding-top:8px;}
+  .step-num{
+    font-family:'Sora',sans-serif;
+    font-size:3.2rem;
+    font-weight:800;
+    background: linear-gradient(135deg, var(--orange), var(--pink));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    opacity:.9;
+    line-height:1;
+    margin-bottom:14px;
+  }
+  .step h3{ font-size:1.1rem; margin-bottom:8px; }
+  .step p{ color:var(--ink-soft); font-size:.93rem; }
+
+  /* ===== Pricing ===== */
+  .pricing-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:28px;
+    align-items:stretch;
+  }
+  .price-card{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:34px 28px;
+    background:var(--white);
+    display:flex; flex-direction:column;
+    transition: transform .3s ease, box-shadow .3s ease;
+  }
+  .price-card:hover{ transform: translateY(-6px); }
+  .price-card.featured{
+    background: linear-gradient(160deg, var(--ink) 0%, #3a2c29 100%);
+    color:#fff;
+    border-color:transparent;
+    box-shadow: var(--shadow);
+  }
+  .price-card.featured .price-tag span,
+  .price-card.featured p,
+  .price-card.featured .check-list li{ color:rgba(255,255,255,.72); }
+  .price-card.featured .check-list li::before{ background:linear-gradient(135deg, var(--orange), var(--pink)); }
+  .plan-name{ font-family:'Sora',sans-serif; font-weight:700; font-size:1.05rem; margin-bottom:6px; }
+  .price-tag{ margin:14px 0 18px; }
+  .price-tag b{ font-family:'Sora',sans-serif; font-size:2.4rem; }
+  .price-tag span{ color:var(--ink-soft); font-size:.85rem; }
+  .price-card .check-list{ margin:22px 0 28px; flex:1; }
+  .price-card .check-list li{ font-size:.9rem; }
+  .badge-tag{
+    align-self:flex-start;
+    background: linear-gradient(135deg, var(--orange), var(--pink));
+    color:#fff;
+    font-size:.7rem; font-weight:700;
+    padding:4px 12px; border-radius:999px;
+    margin-bottom:14px;
+  }
+
+  /* ===== Testimonials ===== */
+  .testi-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:28px;
+  }
+  .testi-card{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:30px;
+  }
+  .testi-card p{ color:var(--ink); font-size:.96rem; margin-bottom:22px; }
+  .testi-person{ display:flex; align-items:center; gap:12px; }
+  .testi-avatar{
+    width:42px; height:42px; border-radius:50%;
+    background: linear-gradient(135deg, var(--orange), var(--pink));
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; font-family:'Sora',sans-serif;
+  }
+  .testi-person b{ display:block; font-size:.9rem; }
+  .testi-person span{ font-size:.78rem; color:var(--ink-soft); }
+  .stars{ color:var(--orange); margin-bottom:14px; font-size:.9rem; letter-spacing:2px; }
+
+  /* ===== CTA banner ===== */
+  .cta-banner{
+    background: linear-gradient(135deg, var(--orange), var(--pink));
+    border-radius:28px;
+    padding:64px 50px;
+    text-align:center;
+    color:#fff;
+    position:relative;
+    overflow:hidden;
+  }
+  .cta-banner::before{
+    content:'';
+    position:absolute;
+    width:380px; height:380px;
+    background: rgba(255,255,255,.08);
+    border-radius:50%;
+    top:-150px; left:-100px;
+  }
+  .cta-banner h2{ font-size: clamp(1.8rem, 3.4vw, 2.6rem); margin-bottom:14px; color:#fff; }
+  .cta-banner p{ color:rgba(255,255,255,.88); max-width:520px; margin:0 auto 30px; }
+  .cta-banner .btn-primary{
+    background:#fff; color:var(--orange-dark); box-shadow:none;
+  }
+  .cta-banner .btn-ghost{ border-color:rgba(255,255,255,.5); color:#fff; }
+  .cta-banner .btn-ghost:hover{ border-color:#fff; color:#fff; background:rgba(255,255,255,.1); }
+  .cta-actions{ display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+
+  /* ===== Contact ===== */
+  .contact-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:60px;
+    align-items:start;
+  }
+  .contact-info .info-item{
+    display:flex; gap:16px; margin-bottom:24px;
+  }
+  .info-icon{
+    width:44px; height:44px; border-radius:12px; flex-shrink:0;
+    background: linear-gradient(135deg, rgba(255,106,57,.12), rgba(255,61,113,.12));
+    display:flex; align-items:center; justify-content:center;
+    color:var(--orange-dark); font-size:1.1rem;
+  }
+  .info-item h4{ font-size:1rem; margin-bottom:4px; }
+  .info-item p{ color:var(--ink-soft); font-size:.92rem; }
+
+  form{
+    background:var(--cream);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:32px;
+    display:flex; flex-direction:column; gap:16px;
+  }
+  .form-row{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  label{ font-size:.82rem; font-weight:600; margin-bottom:6px; display:block; }
+  input, textarea, select{
+    width:100%;
+    padding:13px 14px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:#fff;
+    font-family:'Inter',sans-serif;
+    font-size:.92rem;
+    color:var(--ink);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  input:focus, textarea:focus, select:focus{
+    outline:none;
+    border-color: var(--orange);
+    box-shadow: 0 0 0 4px rgba(255,106,57,.12);
+  }
+  textarea{ resize:vertical; min-height:110px; }
+  .form-msg{
+    font-size:.88rem;
+    font-weight:600;
+    color: var(--orange-dark);
+    min-height:18px;
+  }
+
+  /* ===== Footer ===== */
+  footer{
+    background: var(--ink);
+    color: rgba(255,255,255,.7);
+    padding:60px 0 30px;
+  }
+  .footer-grid{
+    display:grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap:40px;
+    margin-bottom:40px;
+  }
+  .footer-grid h4{ color:#fff; font-size:.95rem; margin-bottom:16px; }
+  .footer-grid ul{ list-style:none; display:flex; flex-direction:column; gap:10px; font-size:.9rem; }
+  .footer-grid ul a{ transition:color .2s; }
+  .footer-grid ul a:hover{ color:var(--orange); }
+  .footer-logo{
+    display:flex; align-items:center; gap:10px;
+    font-family:'Sora',sans-serif; font-weight:800; font-size:1.2rem; color:#fff;
+    margin-bottom:14px;
+  }
+  .footer-logo .mark{
+    width:32px; height:32px; border-radius:9px;
+    background: linear-gradient(135deg, var(--orange), var(--pink));
+    display:flex; align-items:center; justify-content:center; font-size:.9rem;
+  }
+  .footer-grid > div:first-child p{ font-size:.9rem; max-width:280px; }
+  .footer-bottom{
+    border-top:1px solid rgba(255,255,255,.1);
+    padding-top:24px;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+    font-size:.85rem;
+  }
+  .footer-bottom .socials{ display:flex; gap:14px; }
+  .footer-bottom .socials a{
+    width:36px; height:36px; border-radius:50%;
+    border:1px solid rgba(255,255,255,.15);
+    display:flex; align-items:center; justify-content:center;
+    transition: background .2s, border-color .2s;
+  }
+  .footer-bottom .socials a:hover{ background: var(--orange); border-color: var(--orange); }
+
+  /* ===== Reveal animation ===== */
+  .reveal{
+    opacity:0;
+    transform: translateY(28px);
+    transition: opacity .7s ease, transform .7s ease;
+  }
+  .reveal.is-visible{ opacity:1; transform:translateY(0); }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 980px){
+    .hero-grid, .showcase, .contact-grid{ grid-template-columns:1fr; }
+    .showcase .receipt-stage, .showcase-text{ order: unset; }
+    .feature-grid, .steps, .pricing-grid, .testi-grid{ grid-template-columns:repeat(2,1fr); }
+    .footer-grid{ grid-template-columns:repeat(2,1fr); }
+    .receipt-stage{ margin-top:20px; }
+    .showcase{ display:flex; flex-direction:column-reverse; gap:40px; }
+  }
+  @media (max-width: 720px){
+    .nav-links, .nav-actions .btn-ghost{ display:none; }
+    .burger{ display:flex; }
+    .wrap{ padding:0 22px; }
+    .feature-grid, .steps, .pricing-grid, .testi-grid, .footer-grid{ grid-template-columns:1fr; }
+    .form-row{ grid-template-columns:1fr; }
+    .cta-banner{ padding:48px 26px; }
+    .hero{ padding-top:40px; }
+    .trustbar .wrap{ justify-content:center; text-align:center; }
+
+    .nav-links.open{
+      display:flex;
+      flex-direction:column;
+      position:absolute;
+      top:100%; left:0; right:0;
+      background:#fff;
+      padding:24px 28px;
+      gap:18px;
+      border-bottom:1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== Header ===== -->
+<header>
+  <nav class="nav">
+    <a href="#top" class="logo">
+      <span class="mark">T</span>
+      <span>
+        TITAN
+        <small>IT SOLUTION</small>
+      </span>
+    </a>
+    <div class="nav-links" id="navLinks">
+      <a href="#features">Features</a>
+      <a href="#showcase">Dashboard</a>
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <div class="nav-actions">
+      <a href="#contact" class="btn btn-ghost">Sign in</a>
+      <a href="#contact" class="btn btn-primary">Request Demo</a>
+      <button class="burger" id="burger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+</header>
+
+<!-- ===== Hero ===== -->
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow"><span class="dot"></span> Point of Sale, Reinvented</div>
+      <h1>Run your store at the <span>speed of business.</span></h1>
+      <p class="lead">Titan IT Solution gives retailers, restaurants and service businesses one POS platform for sales, inventory, staff and reporting — online or offline, on any device.</p>
+      <div class="hero-ctas">
+        <a href="#contact" class="btn btn-primary">Get a Free Demo</a>
+        <a href="#showcase" class="btn btn-ghost">See the dashboard ↓</a>
+      </div>
+      <div class="hero-meta">
+        <div><b>1,200+</b><span>Stores powered</span></div>
+        <div><b>99.9%</b><span>Uptime guarantee</span></div>
+        <div><b>24/7</b><span>Local support</span></div>
+      </div>
+    </div>
+    <div class="receipt-stage">
+      <div class="receipt" id="receipt">
+        <div class="receipt-head">
+          <div class="rmark"></div>
+          <b>TITAN POS</b>
+          <small>Order #04821 · Counter 02</small>
+        </div>
+        <div id="receiptLines"></div>
+        <div class="receipt-total">
+          <span>TOTAL</span>
+          <span id="receiptTotal">$0.00</span>
+        </div>
+        <div class="receipt-foot">Today’s sales: <span id="dailySales">$0</span><span class="blink"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Trust bar ===== -->
+<div class="trustbar">
+  <div class="wrap">
+    <span>Retail</span>
+    <span>Restaurants &amp; Cafés</span>
+    <span>Pharmacies</span>
+    <span>Supermarkets</span>
+    <span>Salons &amp; Services</span>
+    <span>Wholesale</span>
+  </div>
+</div>
+
+<!-- ===== Features ===== -->
+<section class="section" id="features">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow"><span class="dot"></span> Everything in one system</div>
+      <h2>Built for the way you actually sell.</h2>
+      <p>From the front counter to the back office, Titan POS keeps your sales, stock and staff in sync — no extra spreadsheets required.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon">🧾</div>
+        <h3>Fast checkout</h3>
+        <p>Scan, sell and print receipts in seconds with a touch-friendly interface designed for busy counters.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">📦</div>
+        <h3>Smart inventory</h3>
+        <p>Auto-update stock across every branch, get low-stock alerts, and manage suppliers from one screen.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">📊</div>
+        <h3>Real-time reports</h3>
+        <p>Track sales, profit margins and best-sellers live — view it from your phone, anywhere, anytime.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">👥</div>
+        <h3>Staff &amp; shifts</h3>
+        <p>Assign roles, track attendance and monitor cashier performance with individual login access.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">📡</div>
+        <h3>Works offline</h3>
+        <p>No internet? No problem. Titan POS keeps selling and syncs automatically when you're back online.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">💳</div>
+        <h3>Flexible payments</h3>
+        <p>Accept cash, cards and mobile wallets, and connect with your favourite local payment gateways.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Showcase ===== -->
+<section class="section alt" id="showcase">
+  <div class="wrap showcase">
+    <div class="showcase-text reveal">
+      <div class="eyebrow"><span class="dot"></span> One dashboard, full control</div>
+      <h2>See your whole business from a single screen.</h2>
+      <p>Titan IT Solution's dashboard gives owners and managers a live view of revenue, top products and branch performance — no technical setup needed.</p>
+      <ul class="check-list">
+        <li>Multi-branch view with daily, weekly and monthly comparisons</li>
+        <li>Automatic backups so you never lose sales data</li>
+        <li>Custom user roles for owners, managers and cashiers</li>
+        <li>Export reports to PDF or Excel in one click</li>
+      </ul>
+    </div>
+    <div class="reveal">
+      <div class="device">
+        <div class="device-screen">
+          <div class="ds-top">
+            <b>Today's Overview</b>
+            <span class="ds-pill">Live</span>
+          </div>
+          <div class="ds-stats">
+            <div class="ds-stat"><span>Revenue</span><b>$3,482</b></div>
+            <div class="ds-stat"><span>Transactions</span><b>214</b></div>
+            <div class="ds-stat"><span>New customers</span><b>18</b></div>
+            <div class="ds-stat"><span>Avg. basket</span><b>$16.30</b></div>
+          </div>
+          <div class="ds-bars">
+            <div style="height:40%"></div>
+            <div style="height:65%"></div>
+            <div style="height:50%"></div>
+            <div style="height:90%"></div>
+            <div style="height:70%"></div>
+            <div style="height:100%"></div>
+            <div style="height:55%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== How it works ===== -->
+<section class="section" id="how">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow"><span class="dot"></span> Get started in days, not months</div>
+      <h2>Set up your store in three simple steps.</h2>
+      <p>Our team handles installation and training, so your staff can start using Titan POS confidently from day one.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <h3>Tell us about your store</h3>
+        <p>Share your business type, branches and product list — we'll configure Titan POS to match your workflow.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">02</div>
+        <h3>We install &amp; train your team</h3>
+        <p>Our technicians set up your hardware and walk your staff through the system, in person or remotely.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">03</div>
+        <h3>Go live with full support</h3>
+        <p>Start selling with confidence, backed by our support team and free software updates.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Pricing ===== -->
+<section class="section alt" id="pricing">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow"><span class="dot"></span> Simple pricing</div>
+      <h2>Plans for every size of business.</h2>
+      <p>Start with a single counter or roll out across multiple branches — upgrade anytime as you grow.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card reveal">
+        <div class="plan-name">Starter</div>
+        <p style="color:var(--ink-soft); font-size:.9rem;">For single-location shops getting started with digital sales.</p>
+        <div class="price-tag"><b>$19</b><span> /month, per device</span></div>
+        <ul class="check-list">
+          <li>1 device license</li>
+          <li>Sales &amp; inventory tracking</li>
+          <li>Daily sales reports</li>
+          <li>Email support</li>
+        </ul>
+        <a href="#contact" class="btn btn-ghost">Choose Starter</a>
+      </div>
+      <div class="price-card featured reveal">
+        <div class="badge-tag">Most popular</div>
+        <div class="plan-name">Growth</div>
+        <p style="font-size:.9rem;">For growing stores and restaurants with multiple staff.</p>
+        <div class="price-tag"><b>$39</b><span> /month, per device</span></div>
+        <ul class="check-list">
+          <li>Up to 5 device licenses</li>
+          <li>Multi-branch dashboard</li>
+          <li>Staff accounts &amp; shift tracking</li>
+          <li>Offline mode &amp; auto-sync</li>
+          <li>Priority phone support</li>
+        </ul>
+        <a href="#contact" class="btn btn-primary">Choose Growth</a>
+      </div>
+      <div class="price-card reveal">
+        <div class="plan-name">Enterprise</div>
+        <p style="color:var(--ink-soft); font-size:.9rem;">For chains and franchises needing custom integrations.</p>
+        <div class="price-tag"><b>Custom</b><span> &nbsp;pricing</span></div>
+        <ul class="check-list">
+          <li>Unlimited devices &amp; branches</li>
+          <li>Custom hardware setup</li>
+          <li>Dedicated account manager</li>
+          <li>API &amp; third-party integrations</li>
+          <li>On-site training</li>
+        </ul>
+        <a href="#contact" class="btn btn-ghost">Contact sales</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Testimonials ===== -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow"><span class="dot"></span> Trusted by local businesses</div>
+      <h2>What our customers say.</h2>
+    </div>
+    <div class="testi-grid">
+      <div class="testi-card reveal">
+        <div class="stars">★★★★★</div>
+        <p>"Switching to Titan POS cut our checkout time in half. The offline mode saved us during a power outage and we didn't lose a single sale."</p>
+        <div class="testi-person">
+          <div class="testi-avatar">RA</div>
+          <div><b>Rafiq Ahmed</b><span>Owner, Green Mart</span></div>
+        </div>
+      </div>
+      <div class="testi-card reveal">
+        <div class="stars">★★★★★</div>
+        <p>"Managing three branches used to take hours of manual reporting. Now I check everything from my phone in minutes."</p>
+        <div class="testi-person">
+          <div class="testi-avatar">SN</div>
+          <div><b>Sumaiya Noor</b><span>Manager, Spice Route Café</span></div>
+        </div>
+      </div>
+      <div class="testi-card reveal">
+        <div class="stars">★★★★★</div>
+        <p>"The setup team trained our entire staff in one afternoon. Support has been quick whenever we've needed help."</p>
+        <div class="testi-person">
+          <div class="testi-avatar">TK</div>
+          <div><b>Tanvir Khan</b><span>Owner, Khan Pharmacy</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA banner ===== -->
+<section class="section" id="contact-top">
+  <div class="wrap">
+    <div class="cta-banner reveal">
+      <h2>Ready to upgrade your checkout?</h2>
+      <p>Book a free demo and see how Titan IT Solution can simplify your sales, stock and staff management.</p>
+      <div class="cta-actions">
+        <a href="#contact" class="btn btn-primary">Book a Free Demo</a>
+        <a href="tel:+8800000000" class="btn btn-ghost">Call +880 000-000-000</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Contact ===== -->
+<section class="section alt" id="contact">
+  <div class="wrap contact-grid">
+    <div class="contact-info reveal">
+      <div class="eyebrow"><span class="dot"></span> Talk to our team</div>
+      <h2 style="margin-bottom:24px;">Let's set up your store.</h2>
+      <div class="info-item">
+        <div class="info-icon">📍</div>
+        <div>
+          <h4>Visit us</h4>
+          <p>House 12, Road 5, Banani, Dhaka, Bangladesh</p>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon">📞</div>
+        <div>
+          <h4>Call us</h4>
+          <p>+880 1XXX-XXXXXX (Sat–Thu, 9am–7pm)</p>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon">✉️</div>
+        <div>
+          <h4>Email us</h4>
+          <p>hello@titanitsolution.com</p>
+        </div>
+      </div>
+    </div>
+    <form id="contactForm" class="reveal">
+      <div class="form-row">
+        <div>
+          <label for="name">Full name</label>
+          <input type="text" id="name" name="name" placeholder="Your name" required>
+        </div>
+        <div>
+          <label for="phone">Phone number</label>
+          <input type="tel" id="phone" name="phone" placeholder="01XXXXXXXXX" required>
+        </div>
+      </div>
+      <div>
+        <label for="business">Business type</label>
+        <select id="business" name="business">
+          <option>Retail shop</option>
+          <option>Restaurant / Café</option>
+          <option>Pharmacy</option>
+          <option>Supermarket</option>
+          <option>Salon / Service business</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div>
+        <label for="message">Tell us about your store</label>
+        <textarea id="message" name="message" placeholder="Number of branches, products, current system, etc."></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary" style="justify-content:center;">Request Free Demo</button>
+      <div class="form-msg" id="formMsg"></div>
+    </form>
+  </div>
+</section>
+
+<!-- ===== Footer ===== -->
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark">T</span> Titan IT Solution</div>
+        <p>Modern POS software and hardware for retail, restaurants and service businesses — built for reliability and ease of use.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#showcase">Dashboard</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#how">How it works</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#top">About us</a></li>
+          <li><a href="#contact">Careers</a></li>
+          <li><a href="#contact">Partners</a></li>
+          <li><a href="#contact">Support</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Get in touch</h4>
+        <ul>
+          <li><a href="#contact">Book a demo</a></li>
+          <li><a href="mailto:hello@titanitsolution.com">hello@titanitsolution.com</a></li>
+          <li><a href="tel:+8800000000">+880 000-000-000</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Titan IT Solution. All rights reserved.</span>
+      <div class="socials">
+        <a href="#" aria-label="Facebook">f</a>
+        <a href="#" aria-label="LinkedIn">in</a>
+        <a href="#" aria-label="WhatsApp">w</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ===== Mobile nav toggle =====
+  const burger = document.getElementById('burger');
+  const navLinks = document.getElementById('navLinks');
+  burger.addEventListener('click', () => {
+    navLinks.classList.toggle('open');
+  });
+  navLinks.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => navLinks.classList.remove('open'));
+  });
+
+  // ===== Scroll reveal animation =====
+  const revealEls = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => observer.observe(el));
+
+  // ===== Live receipt ticker =====
+  const items = [
+    { name: "Rice 5kg",      price: 8.50 },
+    { name: "Cooking Oil",   price: 4.20 },
+    { name: "Soft Drink x2", price: 2.00 },
+    { name: "Snack Pack",    price: 1.75 },
+    { name: "Toothpaste",    price: 2.30 },
+    { name: "Notebook",      price: 1.20 },
+    { name: "Milk 1L",       price: 1.90 },
+    { name: "Soap Bar",      price: 0.95 },
+    { name: "Tea Pack",      price: 3.10 },
+    { name: "Biscuits",      price: 1.40 }
+  ];
+
+  const receiptLines = document.getElementById('receiptLines');
+  const receiptTotal = document.getElementById('receiptTotal');
+  const dailySales = document.getElementById('dailySales');
+
+  let total = 0;
+  let dailyTotal = 18420; // starting figure for "today's sales"
+  const maxLines = 5;
+
+  function fmt(n){
+    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function addLine(){
+    const item = items[Math.floor(Math.random() * items.length)];
+    total += item.price;
+    dailyTotal += item.price;
+
+    const line = document.createElement('div');
+    line.className = 'receipt-line';
+    line.innerHTML = `<span>${item.name}</span><span>$${fmt(item.price)}</span>`;
+    receiptLines.appendChild(line);
+
+    if (receiptLines.children.length > maxLines) {
+      receiptLines.removeChild(receiptLines.children[0]);
+    }
+
+    receiptTotal.textContent = '$' + fmt(total);
+    dailySales.textContent = '$' + Math.round(dailyTotal).toLocaleString('en-US');
+
+    if (total > 60) {
+      setTimeout(() => {
+        total = 0;
+        receiptLines.innerHTML = '';
+        receiptTotal.textContent = '$0.00';
+      }, 900);
+    }
+  }
+
+  addLine();
+  setInterval(addLine, 1800);
+
+  // ===== Contact form (front-end only) =====
+  const form = document.getElementById('contactForm');
+  const formMsg = document.getElementById('formMsg');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    formMsg.textContent = "Thanks! Our team will contact you within 24 hours to schedule your demo.";
+    form.reset();
+  });
+</script>
+
+</body>
+</html>
