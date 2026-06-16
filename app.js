@@ -1,6 +1,3 @@
-/* ════════════════════════════════════════
-   ফেরদৌস স্টোর POS — app.js (Firebase Firestore)
-   ════════════════════════════════════════ */
 
 // ─── FIREBASE CONFIG ─────────────────────
 const firebaseConfig = {
@@ -34,31 +31,117 @@ const COL = {
   inventory:    () => db.collection("inventory_movements"),
 };
 
-// ─── LOCAL STATE (synced from Firestore) ──
-let products     = [];
-let customers    = [];
-let suppliers    = [];
-let employees    = [];
-let transactions = [];
-let inventoryMovements = [];
+// ─── LOCAL STATE ─────────────────────────
+let products            = [];
+let customers           = [];
+let suppliers           = [];
+let employees           = [];
+let transactions        = [];
+let inventoryMovements  = [];
 
-const CATEGORIES = ["সব","চাল ও দানা","দুগ্ধজাত","শাকসবজি","ফলমূল","পানীয়","নাস্তা","মসলা"];
+// ─── SETTINGS STATE (with defaults) ──────
+let settingsState = {
+  storeName:    "ফেরদৌস স্টোর",
+  address:      "ঢাকা, বাংলাদেশ",
+  phone:        "01700000000",
+  email:        "ferdausstore@gmail.com",
+  currency:     "BDT (৳)",
+  vat:          "0",
+  footer:       "কেনাকাটার জন্য ধন্যবাদ!",
+  darkMode:     true,
+  expiryWarnDays: 14,   // days before expiry to show warning
+  expiryDangerDays: 7, // days before expiry to show danger
+  categories:   ["চাল ও দানা","দুগ্ধজাত","শাকসবজি","ফলমূল","পানীয়","নাস্তা","মসলা"],
+  qtyPresets:   [100, 250, 500, 1000],
+};
+
+// Dynamic CATEGORIES getter — always includes "সব" at front
+function getCategories() {
+  return ["সব", ...(settingsState.categories || [])];
+}
 
 // POS cart state
-let cart = [];
-let posFilter = "সব";
-let posSearch = "";
-let discountType = "fixed";
-let discountVal = 0;
-let vatPct = 0;
-let payMethod = "নগদ";
+let cart               = [];
+let posFilter          = "সব";
+let posSearch          = "";
+let discountType       = "fixed";
+let discountVal        = 0;
+let vatPct             = 0;
+let payMethod          = "নগদ";
 let selectedCustomerId = "";
-let receivedAmount = 0;
+let receivedAmount     = 0;
 
 // Search states
 let prodSearch = "";
-let prodCat = "সব";
+let prodCat    = "সব";
 let custSearch = "";
+
+// ─── DARK MODE ───────────────────────────
+function applyTheme(dark) {
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+}
+
+// ─── EXPIRY HELPERS ──────────────────────
+function getDaysUntilExpiry(expiry) {
+  if (!expiry) return null;
+  return (new Date(expiry) - new Date()) / 86400000;
+}
+
+function getExpiryStatus(expiry) {
+  const days = getDaysUntilExpiry(expiry);
+  if (days === null) return null;
+  if (days < 0) return { label: "মেয়াদ শেষ", color: "danger", cls: "expiry-urgent" };
+  if (days < settingsState.expiryDangerDays) return { label: `${Math.floor(days)}দ বাকি`, color: "danger", cls: "expiry-urgent" };
+  if (days < settingsState.expiryWarnDays)   return { label: `${Math.floor(days)}দ বাকি`, color: "warn",   cls: "expiry-warn" };
+  return { label: expiry, color: "accent", cls: "expiry-ok" };
+}
+
+function getExpiryBadge(expiry) {
+  const s = getExpiryStatus(expiry);
+  if (!s) return "—";
+  return badge(s.label, s.color);
+}
+
+function getExpiringProducts() {
+  return products.filter(p => {
+    const days = getDaysUntilExpiry(p.expiry);
+    return days !== null && days < settingsState.expiryWarnDays;
+  });
+}
+
+// Update bell badge count
+function updateBellBadge() {
+  const exp  = getExpiringProducts();
+  const low  = products.filter(p => p.stock <= (p.minStock || 0));
+  const count = exp.length + low.length;
+  const badge = document.getElementById("bellBadge");
+  if (!badge) return;
+  if (count > 0) { badge.style.display = "flex"; badge.textContent = count; }
+  else badge.style.display = "none";
+}
+
+function showExpiryAlerts() {
+  const exp = getExpiringProducts();
+  const low = products.filter(p => p.stock <= (p.minStock || 0));
+  let html = "";
+  if (exp.length > 0) {
+    html += `<div class="alert alert-danger" style="margin-bottom:16px">
+      <div class="alert-title" style="color:var(--danger)">${svgIcon(ICONS.warn)} মেয়াদ সতর্কতা (${exp.length})</div>
+      ${exp.map(p => {
+        const s = getExpiryStatus(p.expiry);
+        return `<div class="alert-row"><span>${p.image||"📦"} ${p.name}</span>${badge(s.label, s.color)}</div>`;
+      }).join("")}
+    </div>`;
+  }
+  if (low.length > 0) {
+    html += `<div class="alert alert-warn">
+      <div class="alert-title" style="color:var(--warn)">${svgIcon(ICONS.warn)} কম স্টক (${low.length})</div>
+      ${low.map(p => `<div class="alert-row"><span>${p.image||"📦"} ${p.name}</span>${badge(p.stock+" "+(p.unit||""),"warn")}</div>`).join("")}
+    </div>`;
+  }
+  if (!html) html = `<div style="text-align:center;padding:30px;color:var(--text-muted)">কোনো সতর্কতা নেই ✅</div>`;
+  openModal("🔔 সতর্কতাসমূহ", html, 480);
+}
 
 // ─── TOAST ───────────────────────────────
 function showToast(msg, type = "success") {
@@ -83,10 +166,12 @@ const ICONS = {
   warn:     "M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01",
   money:    "M12 1v22 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6",
   cart:     "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0",
-  pkg:      "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z",
+  pkg:      "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z",
   users:    "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75",
   trend:    "M23 6l-9.5 9.5-5-5L1 18",
   receipt:  "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M12 18v-6 M9 15h6",
+  tag:      "M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z M7 7h.01",
+  layers:   "M12 2 2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5",
 };
 
 function svgIcon(d, size = 16, color = "currentColor") {
@@ -124,7 +209,6 @@ let currentPage = "dashboard";
 
 function navigate(page) {
   currentPage = page;
-  // Close sidebar on mobile after navigation
   if (window.innerWidth <= 768) {
     document.getElementById("sidebar").classList.remove("open");
     document.getElementById("sidebarOverlay").classList.remove("show");
@@ -162,20 +246,32 @@ function closeModal() {
 // ─── FIREBASE DATA LOADERS ────────────────
 async function loadAll() {
   try {
-    const [pSnap, cSnap, sSnap, eSnap, tSnap, iSnap] = await Promise.all([
+    const [pSnap, cSnap, sSnap, eSnap, tSnap, iSnap, stSnap] = await Promise.all([
       COL.products().orderBy("createdAt","desc").get(),
       COL.customers().orderBy("name").get(),
       COL.suppliers().orderBy("name").get(),
       COL.employees().orderBy("name").get(),
       COL.transactions().orderBy("date","desc").limit(100).get(),
       COL.inventory().orderBy("date","desc").limit(50).get(),
+      COL.settings().doc("main").get(),
     ]);
-    products     = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    customers    = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    suppliers    = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    employees    = eSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    transactions = tSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    inventoryMovements = iSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    products            = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    customers           = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    suppliers           = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    employees           = eSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    transactions        = tSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    inventoryMovements  = iSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Load settings from Firestore if they exist
+    if (stSnap.exists) {
+      const saved = stSnap.data();
+      settingsState = { ...settingsState, ...saved };
+    }
+
+    // Apply theme immediately after loading settings
+    applyTheme(settingsState.darkMode);
+    updateTopbarStoreName();
+    updateBellBadge();
     setFbStatus(true);
   } catch(e) {
     console.error("Firestore load error:", e);
@@ -184,11 +280,18 @@ async function loadAll() {
   }
 }
 
+function updateTopbarStoreName() {
+  const el = document.getElementById("topbarBrand");
+  const sn = document.getElementById("sidebarStoreName");
+  if (el) el.textContent = settingsState.storeName || "ফেরদৌস স্টোর";
+  if (sn) sn.textContent = settingsState.storeName || "ফেরদৌস স্টোর";
+}
+
 // ─── DASHBOARD ───────────────────────────
 function renderDashboard() {
-  const todaySales = transactions.slice(0, 8).reduce((s,t) => s + (t.total||0), 0);
-  const lowStock   = products.filter(p => p.stock <= p.minStock);
-  const expSoon    = products.filter(p => p.expiry && (new Date(p.expiry) - new Date()) / 86400000 < 14);
+  const todaySales  = transactions.slice(0, 8).reduce((s,t) => s + (t.total||0), 0);
+  const lowStock    = products.filter(p => p.stock <= (p.minStock||0));
+  const expSoon     = getExpiringProducts();
 
   const weekDays = ["সোম","মঙ্গল","বুধ","বৃহঃ","শুক্র","শনি","রবি"];
   const weekVals = [8400, 12200, 9800, 15600, 18900, 22100, 14300];
@@ -221,8 +324,11 @@ function renderDashboard() {
     </div>` : ""}
     ${expSoon.length > 0 ? `
     <div class="alert alert-danger">
-      <div class="alert-title" style="color:#FF3B5C">${svgIcon(ICONS.warn)} মেয়াদ উত্তীর্ণ (${expSoon.length})</div>
-      ${expSoon.map(p => `<div class="alert-row"><span>${p.image||"📦"} ${p.name}</span>${badge(p.expiry,"danger")}</div>`).join("")}
+      <div class="alert-title" style="color:#FF3B5C">${svgIcon(ICONS.warn)} মেয়াদ সতর্কতা (${expSoon.length})</div>
+      ${expSoon.map(p => {
+        const s = getExpiryStatus(p.expiry);
+        return `<div class="alert-row"><span>${p.image||"📦"} ${p.name}</span>${badge(s.label, s.color)}</div>`;
+      }).join("")}
     </div>` : ""}
   </div>` : "";
 
@@ -298,7 +404,7 @@ function renderPOS() {
             <option value="percent">% শতাংশ</option>
           </select>
           <input type="number" placeholder="ছাড়" id="discVal" oninput="discountVal=+this.value;updateSummary()" style="flex:1;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
-          <input type="number" placeholder="ভ্যাট %" id="vatInput" class="vat-input" oninput="vatPct=+this.value;updateSummary()" style="padding:7px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+          <input type="number" placeholder="ভ্যাট %" id="vatInput" class="vat-input" value="${settingsState.vat||0}" oninput="vatPct=+this.value;updateSummary()" style="padding:7px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
         </div>
         <div class="summary-box">
           <div class="summary-row"><span>সাবটোটাল</span><span id="sumSub">৳০.০০</span></div>
@@ -321,6 +427,7 @@ function renderPOS() {
     </div>
   </div>`;
 
+  vatPct = +(settingsState.vat || 0);
   renderCatChips();
   renderProductGrid();
   renderCart();
@@ -329,7 +436,7 @@ function renderPOS() {
 function renderCatChips() {
   const el = document.getElementById("catChips");
   if (!el) return;
-  el.innerHTML = CATEGORIES.map(c =>
+  el.innerHTML = getCategories().map(c =>
     `<button class="cat-chip${posFilter===c?" active":""}" onclick="setPosFilter('${c}')">${c}</button>`
   ).join("");
 }
@@ -348,13 +455,18 @@ function renderProductGrid() {
     el.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">কোনো পণ্য পাওয়া যায়নি</div>`;
     return;
   }
-  el.innerHTML = filtered.map(p => `
-    <button class="product-card${p.stock<=0?" out-of-stock":""}" onclick="${p.stock<=0?"":"addToCart('"+p.id+"')"}">
+  el.innerHTML = filtered.map(p => {
+    const expStatus = getExpiryStatus(p.expiry);
+    const isExpAlert = expStatus && expStatus.color !== "accent";
+    return `
+    <button class="product-card${p.stock<=0?" out-of-stock":""}${isExpAlert?" expiry-alert-card":""}" onclick="${p.stock<=0?"":"addToCart('"+p.id+"')"}">
       <div class="product-emoji">${p.image||"📦"}</div>
       <div class="product-name">${p.name}</div>
       <div class="product-price">৳${p.sellPrice}</div>
       <div class="product-stock${p.stock<=(p.minStock||0)?" low":""}">স্টক: ${p.stock} ${p.unit||""}</div>
-    </button>`).join("");
+      ${expStatus && isExpAlert ? `<div class="product-expiry-tag" style="background:${expStatus.color==="danger"?"var(--danger-dim)":"var(--warn-dim)"};color:${expStatus.color==="danger"?"var(--danger)":"var(--warn)"}">⚠ ${expStatus.label}</div>` : ""}
+    </button>`;
+  }).join("");
 }
 
 function addToCart(id) {
@@ -374,7 +486,11 @@ function updateQty(id, qty) {
   renderCart();
 }
 
-function clearCart() { cart = []; discountVal=0; vatPct=0; receivedAmount=0; renderCart(); }
+function setCartQty(id, qty) {
+  updateQty(id, qty);
+}
+
+function clearCart() { cart = []; discountVal=0; vatPct=+(settingsState.vat||0); receivedAmount=0; renderCart(); }
 
 function renderCart() {
   const countEl = document.getElementById("cartCount");
@@ -384,19 +500,27 @@ function renderCart() {
   if (cart.length === 0) {
     el.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">🛒</div><div>কার্ট খালি</div><div style="font-size:12px">পণ্যে ক্লিক করে যুক্ত করুন</div></div>`;
   } else {
-    el.innerHTML = cart.map(item => `
+    // Build qty presets HTML
+    const presets = (settingsState.qtyPresets || []);
+    el.innerHTML = cart.map(item => {
+      const presetBtns = presets.map(q =>
+        `<button class="qty-preset-btn" onclick="setCartQty('${item.id}',${q})" title="${q} সেট করুন">${q}</button>`
+      ).join("");
+      return `
       <div class="cart-item">
         <div class="cart-item-emoji">${item.image||"📦"}</div>
         <div class="cart-item-info">
           <div class="cart-item-name">${item.name}</div>
           <div class="cart-item-calc">৳${item.sellPrice} × ${item.qty} = ৳${(item.sellPrice*item.qty).toLocaleString()}</div>
+          ${presets.length > 0 ? `<div class="qty-presets">${presetBtns}</div>` : ""}
         </div>
         <div class="qty-controls">
           <button class="qty-btn" onclick="updateQty('${item.id}',${item.qty-1})">−</button>
           <span class="qty-val">${item.qty}</span>
           <button class="qty-btn" onclick="updateQty('${item.id}',${item.qty+1})">+</button>
         </div>
-      </div>`).join("");
+      </div>`;
+    }).join("");
   }
   updateSummary();
 }
@@ -458,28 +582,19 @@ async function checkout() {
   };
 
   try {
-    // Save transaction
     const txnRef = await COL.transactions().add(txn);
     txn.id = txnRef.id;
 
-    // Update stock for each item
     const batch = db.batch();
     for (const item of cart) {
       const prod = products.find(p=>p.id===item.id);
       if (prod) {
         batch.update(COL.products().doc(item.id), { stock: Math.max(0, prod.stock - item.qty) });
-        // Log inventory movement
         batch.set(COL.inventory().doc(), {
-          product: item.name,
-          productId: item.id,
-          type: "out",
-          qty: item.qty,
-          note: `বিক্রয় ${txnId}`,
-          date: new Date().toISOString(),
-          user: "অ্যাডমিন ইউজার",
+          product: item.name, productId: item.id, type: "out", qty: item.qty,
+          note: `বিক্রয় ${txnId}`, date: new Date().toISOString(), user: "অ্যাডমিন ইউজার",
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         });
-        // Update local
         prod.stock = Math.max(0, prod.stock - item.qty);
       }
     }
@@ -487,8 +602,9 @@ async function checkout() {
 
     transactions.unshift({ id: txnRef.id, ...txn });
     showReceipt({ id: txnId, ...txn });
-    cart = []; discountVal=0; vatPct=0; receivedAmount=0;
+    cart = []; discountVal=0; vatPct=+(settingsState.vat||0); receivedAmount=0;
     renderCart();
+    updateBellBadge();
     showToast("✅ বিক্রয় সফলভাবে সম্পন্ন হয়েছে!");
   } catch(e) {
     showToast("❌ বিক্রয় সংরক্ষণে সমস্যা: " + e.message,"error");
@@ -496,13 +612,16 @@ async function checkout() {
 }
 
 function showReceipt(txn) {
+  const storeName = settingsState.storeName || "ফেরদৌস স্টোর";
+  const storeAddr = settingsState.address || "";
+  const footerMsg = settingsState.footer || "কেনাকাটার জন্য ধন্যবাদ!";
   const items = (txn.cartSnapshot||[]).map(i=>`
     <div class="receipt-row"><span>${i.name} × ${i.qty}</span><span>৳${(i.sellPrice*i.qty).toFixed(2)}</span></div>`).join("");
   const html = `
     <div class="receipt-body">
       <div class="receipt-header">
-        <div class="receipt-store">ফেরদৌস স্টোর</div>
-        <div style="color:var(--text-muted);font-size:12px">ঢাকা, বাংলাদেশ</div>
+        <div class="receipt-store">${storeName}</div>
+        <div style="color:var(--text-muted);font-size:12px">${storeAddr}</div>
         <div style="color:var(--text-muted);font-size:12px">${new Date(txn.date).toLocaleString("en-GB")}</div>
         <div style="font-weight:700;margin-top:4px">${txn.invoiceId||txn.id}</div>
       </div>
@@ -515,7 +634,7 @@ function showReceipt(txn) {
       <div class="receipt-divider"></div>
       <div class="receipt-row total"><span>সর্বমোট</span><span>৳${(txn.total||0).toFixed(2)}</span></div>
       <div class="receipt-row"><span>পেমেন্ট পদ্ধতি</span><span>${txn.payment||""}</span></div>
-      <div class="receipt-footer-text">ফেরদৌস স্টোর থেকে কেনাকাটার জন্য ধন্যবাদ!</div>
+      <div class="receipt-footer-text">${footerMsg}</div>
     </div>
     <div class="modal-footer">
       ${btn("প্রিন্ট করুন","btn btn-accent","window.print()",ICONS.printer)}
@@ -526,15 +645,13 @@ function showReceipt(txn) {
 
 // ─── PRODUCTS ────────────────────────────
 function renderProducts() {
-  const lowIds = new Set(products.filter(p=>p.stock<=p.minStock).map(p=>p.id));
+  const lowIds = new Set(products.filter(p=>p.stock<=(p.minStock||0)).map(p=>p.id));
   const filtered = products.filter(p =>
     (prodCat==="সব"||p.category===prodCat) &&
     (p.name.includes(prodSearch)||(p.sku||"").toLowerCase().includes(prodSearch.toLowerCase()))
   );
 
   const rows = filtered.map(p => {
-    const days = p.expiry ? (new Date(p.expiry)-new Date())/86400000 : 9999;
-    const expColor = days<7?"danger":days<30?"warn":"muted";
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:10px"><span style="font-size:22px">${p.image||"📦"}</span><div><div style="font-weight:600">${p.name}</div><div style="font-size:11px;color:var(--text-muted)">${p.barcode||""}</div></div></div></td>
       <td class="mono" style="color:var(--text-muted)">${p.sku||""}</td>
@@ -542,7 +659,7 @@ function renderProducts() {
       <td class="mono" style="color:var(--text-sub)">৳${p.buyPrice||0}</td>
       <td class="mono" style="color:var(--accent);font-weight:700">৳${p.sellPrice||0}</td>
       <td style="color:${lowIds.has(p.id)?"var(--danger)":"var(--text)"};font-weight:${lowIds.has(p.id)?700:400}">${p.stock} ${p.unit||""}</td>
-      <td>${p.expiry?badge(p.expiry,expColor):"—"}</td>
+      <td>${getExpiryBadge(p.expiry)}</td>
       <td>${lowIds.has(p.id)?badge("কম স্টক","danger"):badge("স্টকে আছে","accent")}</td>
       <td><div style="display:flex;gap:6px;flex-wrap:wrap">
         ${btn("","btn btn-soft-info btn-sm",`openProductModal('${p.id}')`,ICONS.edit)}
@@ -561,7 +678,7 @@ function renderProducts() {
         <input class="search-input" placeholder="পণ্য খুঁজুন..." value="${prodSearch}" oninput="prodSearch=this.value;renderProducts()">
       </div>
       <select class="form-select" style="min-width:150px" onchange="prodCat=this.value;renderProducts()">
-        ${CATEGORIES.map(c=>`<option${prodCat===c?" selected":""}>${c}</option>`).join("")}
+        ${getCategories().map(c=>`<option${prodCat===c?" selected":""}>${c}</option>`).join("")}
       </select>
     </div>
     <div class="table-wrap" style="overflow-x:auto">
@@ -576,6 +693,7 @@ function openProductModal(id) {
   const p = id ? products.find(x=>x.id===id) : null;
   const EMOJIS = ["🌾","🥛","🍅","🫘","🫙","🍬","🧂","🧅","🍌","🍵","🍪","🥚","🧴","🫐","🍎","🥕","📦","🧹","🪣","🧻","🫧","🥤","🍞","🫓"];
   const emojiPicker = EMOJIS.map(e=>`<button class="emoji-btn${(p?.image||"📦")===e?" active":""}" type="button" onclick="selectEmoji(this,'${e}')">${e}</button>`).join("");
+  const cats = settingsState.categories || [];
   const html = `
     <div class="form-grid-2">
       <div class="span-2" style="display:flex;gap:12px;align-items:center">
@@ -585,7 +703,7 @@ function openProductModal(id) {
       <div class="form-group"><label class="form-label">পণ্যের নাম *</label><input class="form-input" id="f_name" value="${p?.name||""}" placeholder="পণ্যের নাম"></div>
       <div class="form-group"><label class="form-label">এসকেইউ</label><input class="form-input" id="f_sku" value="${p?.sku||""}" placeholder="RIC001"></div>
       <div class="form-group"><label class="form-label">ক্যাটাগরি</label>
-        <select class="form-select" id="f_cat">${CATEGORIES.slice(1).map(c=>`<option${p?.category===c?" selected":""}>${c}</option>`).join("")}</select>
+        <select class="form-select" id="f_cat">${cats.map(c=>`<option${p?.category===c?" selected":""}>${c}</option>`).join("")}</select>
       </div>
       <div class="form-group"><label class="form-label">একক</label>
         <select class="form-select" id="f_unit">${["কেজি","গ্রাম","লিটার","মিলি","পিস","প্যাকেট","বোতল","বক্স","ডজন","ব্যাগ"].map(u=>`<option${p?.unit===u?" selected":""}>${u}</option>`).join("")}</select>
@@ -618,8 +736,7 @@ async function saveProduct(id) {
   if (!sellPrice) { showToast("বিক্রয় মূল্য দিন!","error"); return; }
 
   const obj = {
-    image: img,
-    name,
+    image: img, name,
     sku:       document.getElementById("f_sku")?.value||"",
     category:  document.getElementById("f_cat")?.value||"",
     unit:      document.getElementById("f_unit")?.value||"পিস",
@@ -644,6 +761,7 @@ async function saveProduct(id) {
       showToast("✅ পণ্য যুক্ত হয়েছে!");
     }
     closeModal();
+    updateBellBadge();
     renderProducts();
   } catch(e) {
     showToast("❌ সমস্যা হয়েছে: " + e.message,"error");
@@ -655,6 +773,7 @@ async function deleteProduct(id) {
   try {
     await COL.products().doc(id).delete();
     products = products.filter(p=>p.id!==id);
+    updateBellBadge();
     renderProducts();
     showToast("✅ পণ্য মুছে ফেলা হয়েছে!");
   } catch(e) {
@@ -667,6 +786,7 @@ function renderInventory() {
   const lowStock = products.filter(p=>p.stock<=(p.minStock||0));
   const outStock = products.filter(p=>p.stock===0);
   const totalVal = products.reduce((s,p)=>s+(p.buyPrice||0)*(p.stock||0),0);
+  const expSoon  = getExpiringProducts();
 
   document.getElementById("pageContent").innerHTML = `
     <div class="page-header">
@@ -679,6 +799,19 @@ function renderInventory() {
       ${statCard("স্টক শেষ",outStock.length,ICONS.warn,"#FF3B5C")}
       ${statCard("স্টক মূল্য","৳"+totalVal.toLocaleString(),ICONS.money,"#4E9EFF")}
     </div>
+    ${expSoon.length>0?`
+    <div class="alert alert-danger" style="margin-bottom:16px">
+      <div class="alert-title" style="color:#FF3B5C">${svgIcon(ICONS.warn)} মেয়াদ সতর্কতা (${expSoon.length}টি পণ্য ${settingsState.expiryWarnDays} দিনের মধ্যে মেয়াদ শেষ)</div>
+      <div class="expiry-list">
+        ${expSoon.map(p=>{
+          const s = getExpiryStatus(p.expiry);
+          return `<div class="expiry-item">
+            <span>${p.image||"📦"} ${p.name}</span>
+            <span class="expiry-days-badge" style="background:${s.color==="danger"?"var(--danger-dim)":"var(--warn-dim)"};color:${s.color==="danger"?"var(--danger)":"var(--warn)"}">${s.label}</span>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`:""}
     ${lowStock.length>0?`
     <div class="alert alert-warn" style="margin-bottom:24px">
       <div class="alert-title" style="color:#FF6B35">${svgIcon(ICONS.warn)} ⚠️ কম স্টক (${lowStock.length})</div>
@@ -725,7 +858,13 @@ function openAdjustModal(pid) {
       <div class="form-group"><label class="form-label">ধরন</label>
         <select class="form-select" id="adj_type"><option value="in">স্টক ইন (+)</option><option value="out">স্টক আউট (-)</option></select>
       </div>
-      <div class="form-group"><label class="form-label">পরিমাণ</label><input class="form-input" type="number" id="adj_qty" placeholder="পরিমাণ" min="1"></div>
+      <div class="form-group"><label class="form-label">পরিমাণ</label>
+        <input class="form-input" type="number" id="adj_qty" placeholder="পরিমাণ" min="1">
+        ${(settingsState.qtyPresets||[]).length > 0 ? `
+        <div class="qty-presets" style="margin-top:8px">
+          ${(settingsState.qtyPresets||[]).map(q=>`<button class="qty-preset-btn" type="button" onclick="document.getElementById('adj_qty').value=${q}">${q}</button>`).join("")}
+        </div>` : ""}
+      </div>
       <div class="form-group"><label class="form-label">নোট</label><input class="form-input" id="adj_note" placeholder="কারণ লিখুন..."></div>
     </div>
     <div class="modal-footer">
@@ -752,9 +891,8 @@ async function applyAdjust() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
     products = products.map(p=>p.id===pid?{...p,stock:newStock}:p);
-    const mov = { product:prod.name, type, qty, note:note||"", date:new Date().toISOString(), user:"অ্যাডমিন ইউজার" };
-    inventoryMovements.unshift(mov);
-    closeModal(); renderInventory();
+    inventoryMovements.unshift({ product:prod.name, type, qty, note:note||"", date:new Date().toISOString(), user:"অ্যাডমিন ইউজার" });
+    closeModal(); renderInventory(); updateBellBadge();
     showToast("✅ স্টক আপডেট হয়েছে!");
   } catch(e) {
     showToast("❌ সমস্যা: " + e.message,"error");
@@ -913,7 +1051,6 @@ async function saveSupplier(id) {
 function renderEmployees() {
   const roleColor = r => r==="অ্যাডমিন"?"#FF3B5C":r==="ম্যানেজার"?"#FFB344":"#00D4AA";
   const roleIcon  = r => r==="অ্যাডমিন"?"👑":r==="ম্যানেজার"?"🎯":"💼";
-  const badgeOf   = r => r==="অ্যাডমিন"?"danger":r==="ম্যানেজার"?"gold":"accent";
 
   document.getElementById("pageContent").innerHTML = `
     <div class="page-header">
@@ -1042,23 +1179,35 @@ function renderReports() {
 }
 
 // ─── SETTINGS ────────────────────────────
-let settingsState = {
-  storeName:"ফেরদৌস স্টোর", address:"ঢাকা, বাংলাদেশ",
-  phone:"01700000000", email:"ferdausstore@gmail.com",
-  currency:"BDT (৳)", vat:"0", footer:"কেনাকাটার জন্য ধন্যবাদ!",
-  darkMode:true
-};
 
 function renderSettings() {
+  const cats    = settingsState.categories || [];
+  const presets = settingsState.qtyPresets || [];
+
   const tog = (key, label, desc) => `
     <div class="toggle-row">
       <div><div class="toggle-label">${label}</div><div class="toggle-desc">${desc}</div></div>
-      <button class="toggle-switch${settingsState[key]?" on":""}" onclick="toggleSetting('${key}')"><div class="toggle-knob"></div></button>
+      <button class="toggle-switch${settingsState[key]?" on":""}" id="toggle_${key}" onclick="liveToggle('${key}')"><div class="toggle-knob"></div></button>
     </div>`;
+
+  const catList = cats.map((c, i) => `
+    <div class="cat-manage-item">
+      <div class="cat-manage-name">🏷️ ${c}</div>
+      <div class="cat-manage-actions">
+        <button class="btn btn-soft-danger btn-sm" onclick="removeCategory(${i})">✕</button>
+      </div>
+    </div>`).join("") || `<div style="color:var(--text-muted);font-size:13px;padding:8px 0">কোনো ক্যাটাগরি নেই</div>`;
+
+  const presetList = presets.map((q, i) => `
+    <div class="qty-preset-tag">
+      ${q}<button onclick="removeQtyPreset(${i})" title="মুছুন">✕</button>
+    </div>`).join("") || `<div style="color:var(--text-muted);font-size:13px">কোনো প্রিসেট নেই</div>`;
 
   document.getElementById("pageContent").innerHTML = `
   <div class="settings-wrap">
     <div class="page-title" style="margin-bottom:0">সেটিংস</div>
+
+    <!-- Store Info -->
     <div class="settings-section">
       <h3>🏪 দোকানের তথ্য</h3>
       <div class="form-grid-2">
@@ -1068,40 +1217,179 @@ function renderSettings() {
         <div class="form-group span-2"><label class="form-label">ঠিকানা</label><input class="form-input" id="st_addr" value="${settingsState.address}"></div>
       </div>
     </div>
+
+    <!-- Tax & Currency -->
     <div class="settings-section">
       <h3>💰 কর ও মুদ্রা</h3>
       <div class="form-grid-2">
         <div class="form-group"><label class="form-label">মুদ্রা</label>
           <select class="form-select" id="st_cur">${["BDT (৳)","USD ($)","EUR (€)"].map(c=>`<option${settingsState.currency===c?" selected":""}>${c}</option>`).join("")}</select>
         </div>
-        <div class="form-group"><label class="form-label">ডিফল্ট ভ্যাট %</label><input class="form-input" type="number" id="st_vat" value="${settingsState.vat}"></div>
+        <div class="form-group"><label class="form-label">ডিফল্ট ভ্যাট %</label><input class="form-input" type="number" id="st_vat" value="${settingsState.vat||0}"></div>
       </div>
     </div>
+
+    <!-- Expiry Settings -->
+    <div class="settings-section">
+      <h3>📅 মেয়াদ সতর্কতা সেটিং</h3>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">সতর্কতা (কতদিন আগে) <span style="color:var(--warn)">⚠</span></label>
+          <input class="form-input" type="number" id="st_expWarn" value="${settingsState.expiryWarnDays||14}" min="1" placeholder="14">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">এই দিনের মধ্যে মেয়াদ শেষ হলে হলুদ সতর্কতা দেখাবে</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">বিপদ সংকেত (কতদিন আগে) <span style="color:var(--danger)">🔴</span></label>
+          <input class="form-input" type="number" id="st_expDanger" value="${settingsState.expiryDangerDays||7}" min="1" placeholder="7">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">এই দিনের মধ্যে মেয়াদ শেষ হলে লাল বিপদ সংকেত দেখাবে</div>
+        </div>
+      </div>
+      <div class="alert alert-info" style="margin-top:14px">
+        <div style="font-size:13px;color:var(--info)">
+          ℹ️ এই সেটিং সংরক্ষণ করলে <strong>সব পেজে</strong> মেয়াদ রঙ স্বয়ংক্রিয়ভাবে আপডেট হবে — ড্যাশবোর্ড, পণ্য, ইনভেন্টরি, POS সব জায়গায়।
+        </div>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="settings-section">
+      <h3>🏷️ ক্যাটাগরি ব্যবস্থাপনা</h3>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <input class="form-input" id="newCatInput" placeholder="নতুন ক্যাটাগরির নাম..." style="flex:1" onkeydown="if(event.key==='Enter')addCategory()">
+        ${btn("যুক্ত করুন","btn btn-accent","addCategory()",ICONS.plus)}
+      </div>
+      <div class="cat-manage-list" id="catManageList">${catList}</div>
+    </div>
+
+    <!-- Qty Presets -->
+    <div class="settings-section">
+      <h3>⚖️ কাস্টম পরিমাণ প্রিসেট</h3>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">POS ও স্টক সমন্বয়ে দ্রুত পরিমাণ নির্বাচনের জন্য শর্টকাট বোতাম (যেমন: 100gm, 500gm, 1000gm)</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <input class="form-input" type="number" id="newPresetInput" placeholder="পরিমাণ (যেমন 500)..." style="flex:1" min="1" onkeydown="if(event.key==='Enter')addQtyPreset()">
+        ${btn("যুক্ত করুন","btn btn-accent","addQtyPreset()",ICONS.plus)}
+      </div>
+      <div class="qty-preset-list" id="presetList">${presetList}</div>
+    </div>
+
+    <!-- Receipt -->
     <div class="settings-section">
       <h3>🧾 রসিদ</h3>
       <div class="form-group"><label class="form-label">ফুটার বার্তা</label><input class="form-input" id="st_footer" value="${settingsState.footer}"></div>
     </div>
+
+    <!-- Theme -->
     <div class="settings-section">
       <h3>🎨 থিম</h3>
       ${tog("darkMode","ডার্ক মোড","অ্যাপে ডার্ক থিম ব্যবহার করুন")}
     </div>
+
     ${btn("সেটিংস সংরক্ষণ করুন","btn btn-accent btn-lg","saveSettings()",ICONS.check)}
   </div>`;
 }
 
-function toggleSetting(key) { settingsState[key] = !settingsState[key]; renderSettings(); }
+// Live dark mode toggle (instant, without saving)
+function liveToggle(key) {
+  settingsState[key] = !settingsState[key];
+  const sw = document.getElementById(`toggle_${key}`);
+  if (sw) sw.classList.toggle("on", settingsState[key]);
+  const knob = sw?.querySelector(".toggle-knob");
+  if (key === "darkMode") {
+    applyTheme(settingsState.darkMode);
+  }
+}
 
+// ── CATEGORY MANAGEMENT ──────────────────
+function addCategory() {
+  const input = document.getElementById("newCatInput");
+  const name  = input?.value?.trim();
+  if (!name) { showToast("ক্যাটাগরির নাম দিন!","error"); return; }
+  if (settingsState.categories.includes(name)) { showToast("এই ক্যাটাগরি আগে থেকেই আছে!","warn"); return; }
+  settingsState.categories.push(name);
+  input.value = "";
+  rerenderCatList();
+  showToast(`✅ "${name}" ক্যাটাগরি যুক্ত হয়েছে`);
+}
+
+function removeCategory(idx) {
+  const name = settingsState.categories[idx];
+  settingsState.categories.splice(idx, 1);
+  rerenderCatList();
+  showToast(`"${name}" ক্যাটাগরি মুছে ফেলা হয়েছে`);
+}
+
+function rerenderCatList() {
+  const el = document.getElementById("catManageList");
+  if (!el) return;
+  const cats = settingsState.categories || [];
+  el.innerHTML = cats.map((c, i) => `
+    <div class="cat-manage-item">
+      <div class="cat-manage-name">🏷️ ${c}</div>
+      <div class="cat-manage-actions">
+        <button class="btn btn-soft-danger btn-sm" onclick="removeCategory(${i})">✕</button>
+      </div>
+    </div>`).join("") || `<div style="color:var(--text-muted);font-size:13px;padding:8px 0">কোনো ক্যাটাগরি নেই</div>`;
+}
+
+// ── QTY PRESET MANAGEMENT ────────────────
+function addQtyPreset() {
+  const input = document.getElementById("newPresetInput");
+  const val   = +input?.value;
+  if (!val || val <= 0) { showToast("সঠিক পরিমাণ দিন!","error"); return; }
+  if (settingsState.qtyPresets.includes(val)) { showToast("এই প্রিসেট আগে থেকেই আছে!","warn"); return; }
+  settingsState.qtyPresets.push(val);
+  settingsState.qtyPresets.sort((a,b) => a-b);
+  input.value = "";
+  rerenderPresetList();
+  showToast(`✅ ${val} প্রিসেট যুক্ত হয়েছে`);
+}
+
+function removeQtyPreset(idx) {
+  const val = settingsState.qtyPresets[idx];
+  settingsState.qtyPresets.splice(idx, 1);
+  rerenderPresetList();
+  showToast(`${val} প্রিসেট মুছে ফেলা হয়েছে`);
+}
+
+function rerenderPresetList() {
+  const el = document.getElementById("presetList");
+  if (!el) return;
+  const presets = settingsState.qtyPresets || [];
+  el.innerHTML = presets.map((q, i) => `
+    <div class="qty-preset-tag">
+      ${q}<button onclick="removeQtyPreset(${i})" title="মুছুন">✕</button>
+    </div>`).join("") || `<div style="color:var(--text-muted);font-size:13px">কোনো প্রিসেট নেই</div>`;
+}
+
+// ── SAVE ALL SETTINGS ────────────────────
 async function saveSettings() {
-  settingsState.storeName = document.getElementById("st_name").value;
-  settingsState.phone     = document.getElementById("st_phone").value;
-  settingsState.email     = document.getElementById("st_email").value;
-  settingsState.address   = document.getElementById("st_addr").value;
-  settingsState.currency  = document.getElementById("st_cur").value;
-  settingsState.vat       = document.getElementById("st_vat").value;
-  settingsState.footer    = document.getElementById("st_footer").value;
+  // Read form values
+  settingsState.storeName        = document.getElementById("st_name")?.value || settingsState.storeName;
+  settingsState.phone            = document.getElementById("st_phone")?.value || settingsState.phone;
+  settingsState.email            = document.getElementById("st_email")?.value || settingsState.email;
+  settingsState.address          = document.getElementById("st_addr")?.value || settingsState.address;
+  settingsState.currency         = document.getElementById("st_cur")?.value || settingsState.currency;
+  settingsState.vat              = document.getElementById("st_vat")?.value || "0";
+  settingsState.footer           = document.getElementById("st_footer")?.value || settingsState.footer;
+  settingsState.expiryWarnDays   = +document.getElementById("st_expWarn")?.value || 14;
+  settingsState.expiryDangerDays = +document.getElementById("st_expDanger")?.value || 7;
+
+  // Apply theme immediately
+  applyTheme(settingsState.darkMode);
+  updateTopbarStoreName();
+  updateBellBadge();
+
+  // Persist to Firestore
   try {
-    await COL.settings().doc("main").set({ ...settingsState, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-    showToast("✅ সেটিংস সংরক্ষিত হয়েছে!");
+    const toSave = { ...settingsState };
+    delete toSave.createdAt; // avoid conflicts
+    await COL.settings().doc("main").set({
+      ...toSave,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    showToast("✅ সেটিংস সংরক্ষিত হয়েছে! সব পেজে আপডেট হয়েছে।");
+    // Re-render settings to reflect saved state
+    renderSettings();
   } catch(e) {
     showToast("❌ সমস্যা: " + e.message,"error");
   }
@@ -1110,10 +1398,13 @@ async function saveSettings() {
 // ─── INIT ────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
 
+  // Apply default theme before loading
+  applyTheme(settingsState.darkMode);
+
   // Sidebar toggle
   const sidebarToggle = document.getElementById("sidebarToggle");
-  const sidebar = document.getElementById("sidebar");
-  const overlay = document.getElementById("sidebarOverlay");
+  const sidebar       = document.getElementById("sidebar");
+  const overlay       = document.getElementById("sidebarOverlay");
 
   sidebarToggle.addEventListener("click", () => {
     if (window.innerWidth <= 768) {
